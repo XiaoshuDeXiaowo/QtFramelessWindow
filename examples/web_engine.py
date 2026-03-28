@@ -1,11 +1,11 @@
 # coding:utf-8
 import sys
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QHBoxLayout
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QApplication, QHBoxLayout
 
-from qframelesswindow import FramelessWindow, TitleBar, StandardTitleBar
-from qframelesswindow.webengine import FramelessWebEngineView
+from QtFramelessWindow import FramelessWindow, TitleBar, StandardTitleBar
+from QtFramelessWindow.webengine import FramelessWebEngineView
 
 
 class Window(FramelessWindow):

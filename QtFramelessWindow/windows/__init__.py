@@ -6,14 +6,13 @@ from ctypes.wintypes import LPRECT, MSG
 import win32api
 import win32con
 import win32gui
-from PySide2.QtCore import Qt, QSize, QRect, QEvent
-from PySide2.QtGui import QCloseEvent, QCursor
-from PySide2.QtWidgets import QApplication, QWidget
-from PySide2.QtWinExtras import QtWin
+from qtpy.QtCore import Qt, QSize, QRect, QEvent
+from qtpy.QtGui import QCloseEvent, QCursor
+from qtpy.QtWidgets import QApplication, QWidget
 
 from ..titlebar import TitleBar
 from ..utils import win32_utils as win_utils
-from ..utils.win32_utils import Taskbar, isSystemBorderAccentEnabled, getSystemAccentColor
+from ..utils.win32_utils import Taskbar, isSystemBorderAccentEnabled, getSystemAccentColor, QT_VERSION
 from .c_structures import LPNCCALCSIZE_PARAMS
 from .window_effect import WindowsWindowEffect
 
@@ -25,16 +24,14 @@ class WindowsFramelessWindow(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self._isSystemButtonVisible = False
-
-    def _initFrameless(self):
         self.windowEffect = WindowsWindowEffect(self)
         self.titleBar = TitleBar(self)
+        self._isSystemButtonVisible = False
         self._isResizeEnabled = True
 
         self.updateFrameless()
 
-        # solve issue #5
+        # solve issue zhiyiYo/PyQt-Frameless-Window#5
         self.windowHandle().screenChanged.connect(self.__onScreenChanged)
 
         self.resize(500, 500)
@@ -42,15 +39,16 @@ class WindowsFramelessWindow(QWidget):
 
     def updateFrameless(self):
         """ update frameless window """
-        # remove window border
-        stayOnTop = Qt.WindowStaysOnTopHint if self.windowFlags() & Qt.WindowStaysOnTopHint else 0
+        stayOnTop = Qt.WindowType.WindowStaysOnTopHint if self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint else 0
+        stayOnTop = Qt.WindowType(stayOnTop)
 
         if not win_utils.isWin7():
-            self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+            self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
         elif self.parent():
-            self.setWindowFlags(self.parent().windowFlags() | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | stayOnTop)
+            self.setWindowFlags(self.parent().windowFlags() | Qt.WindowType.FramelessWindowHint
+                | Qt.WindowType.WindowMinMaxButtonsHint | stayOnTop)
         else:
-            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | stayOnTop)
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinMaxButtonsHint | stayOnTop)
 
         # add DWM shadow and window animation
         self.windowEffect.addWindowAnimation(self.winId())
@@ -85,16 +83,16 @@ class WindowsFramelessWindow(QWidget):
     def setStayOnTop(self, isTop: bool):
         """ set the stay on top status """
         if isTop:
-            self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+            self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
         else:
-            self.setWindowFlags(self.windowFlags() & ~Qt.WindowStaysOnTopHint)
+            self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
 
         self.updateFrameless()
         self.show()
 
     def toggleStayOnTop(self):
         """ toggle the stay on top status """
-        if self.windowFlags() & Qt.WindowStaysOnTopHint:
+        if self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint:
             self.setStayOnTop(False)
         else:
             self.setStayOnTop(True)
@@ -125,7 +123,7 @@ class WindowsFramelessWindow(QWidget):
         """ Handle the Windows message """
         msg = MSG.from_address(message.__int__())
         if not msg.hWnd:
-            return super().nativeEvent(eventType, message)
+            return False, 0  # See the comments below.
 
         if msg.message == win32con.WM_NCHITTEST and self._isResizeEnabled:
             xPos, yPos = win32gui.ScreenToClient(msg.hWnd, win32api.GetCursorPos())
@@ -134,7 +132,7 @@ class WindowsFramelessWindow(QWidget):
             w = clientRect[2] - clientRect[0]
             h = clientRect[3] - clientRect[1]
 
-            # fixes https://github.com/zhiyiYo/PyQt-Frameless-Window/issues/98
+            # fixes zhiyiYo/PyQt-Frameless-Window#98
             bw = 0 if win_utils.isMaximized(msg.hWnd) or win_utils.isFullScreen(msg.hWnd) else self.BORDER_WIDTH
             lx = xPos < bw  # left
             rx = xPos > w - bw  # right
@@ -191,12 +189,13 @@ class WindowsFramelessWindow(QWidget):
             return True, result
         elif msg.message == win32con.WM_SETFOCUS and isSystemBorderAccentEnabled():
             self.windowEffect.setBorderAccentColor(self.winId(), getSystemAccentColor())
-            return True, 0
-        elif msg.message == win32con.WM_KILLFOCUS:
+        elif msg.message == win32con.WM_KILLFOCUS and isSystemBorderAccentEnabled():
             self.windowEffect.removeBorderAccentColor(self.winId())
-            return True, 0
 
-        return super().nativeEvent(eventType, message)
+        return False, 0
+        # In Qt6 (PyQt6/PySide6), directly using `return super().nativeEvent(eventType, message)` here will cause
+        # the application to crash. The exact reason for this issue is currently unclear, but writing it this way
+        # effectively resolves the problem.
 
     def __onScreenChanged(self):
         hWnd = int(self.windowHandle().winId())
@@ -211,23 +210,21 @@ class AcrylicWindow(WindowsFramelessWindow):
         super().__init__(parent=parent)
         self.__closedByKey = False
 
-    def _initFrameless(self):
-        super()._initFrameless()
         self.updateFrameless()
-        self.setStyleSheet("background:transparent")
+        self.setStyleSheet("AcrylicWindow{background:transparent}")
 
     def updateFrameless(self):
-        super().updateFrameless()
-        QtWin.enableBlurBehindWindow(self)
+        stayOnTop = Qt.WindowType.WindowStaysOnTopHint if self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint else 0
+        stayOnTop = Qt.WindowType(stayOnTop)
 
-        stayOnTop = Qt.WindowStaysOnTopHint if self.windowFlags() & Qt.WindowStaysOnTopHint else 0
-
-        if win_utils.isWin7() and self.parent():
-            self.setWindowFlags(self.parent().windowFlags() | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | stayOnTop)
+        if QT_VERSION < (6, 10, 0):
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | stayOnTop)
         else:
-            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint | stayOnTop)
+            # fix issue zhiyiYo/PyQt-Frameless-Window#206
+            self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.NoTitleBarBackgroundHint | stayOnTop)
 
         self.windowEffect.addWindowAnimation(self.winId())
+        self.windowEffect.enableBlurBehindWindow(self.winId())
 
         if win_utils.isWin7():
             self.windowEffect.addShadowEffect(self.winId())

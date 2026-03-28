@@ -2,21 +2,22 @@ import setuptools
 
 
 with open('README.md', encoding='utf-8') as f:
-    long_description = f.read()
+    long_description = f.read().replace('./', 'https://raw.githubusercontent.com/XiaoshuDeXiaowo/QtFramelessWindow/main/')
 
 setuptools.setup(
-    name="PySide2-Frameless-Window",
-    version="0.8.0",
-    keywords="pyside2 frameless",
-    author="zhiyiYo",
-    author_email="shokokawaii@outlook.com",
-    description="A cross-platform frameless window based on pyside2, support Win32, Linux and macOS.",
+    name="QtFramelessWindow",
+    version="0.0.1",
+    keywords="pyqt pyside frameless",
+    author="zhiyiYo, XiaoshuDeXiaowo",
+    author_email="shokokawaii@outlook.com, xiaoshu312@xiaoshu312.top",
+    description="A cross-platform frameless window based on PyQt/PySide, support Win32, macOS and Linux.",
     long_description=long_description,
     long_description_content_type='text/markdown',
     license="LGPLv3",
-    url="https://github.com/zhiyiYo/PyQt-Frameless-Window/tree/Pyside2",
+    url="https://github.com/XiaoshuDeXiaowo/QtFramelessWindow",
     packages=setuptools.find_packages(),
     install_requires=[
+        "qtpy",
         "pywin32;platform_system=='Windows'",
         "pyobjc;platform_system=='Darwin'",
         "PyCocoa;platform_system=='Darwin'",

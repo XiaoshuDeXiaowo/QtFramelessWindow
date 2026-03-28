@@ -1,11 +1,11 @@
 # coding:utf-8
 import sys
 
-from PySide2.QtCore import Qt, QEvent
-from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import QLabel, QHBoxLayout, QWidget
+from qtpy.QtCore import Qt, QEvent
+from qtpy.QtGui import QIcon
+from qtpy.QtWidgets import QLabel, QHBoxLayout, QWidget
 
-from ..utils import startSystemMove
+from ..utils import startSystemMove, toggleMaxState
 from .title_bar_buttons import (CloseButton, MaximizeButton, MinimizeButton,
                                 SvgTitleBarButton, TitleBarButton)
 
@@ -33,7 +33,7 @@ class TitleBarBase(QWidget):
 
     def eventFilter(self, obj, e):
         if obj is self.window():
-            if e.type() == QEvent.WindowStateChange:
+            if e.type() == QEvent.Type.WindowStateChange:
                 self.maxBtn.setMaxState(self.window().isMaximized())
                 return False
 
@@ -41,7 +41,7 @@ class TitleBarBase(QWidget):
 
     def mouseDoubleClickEvent(self, event):
         """ Toggles the maximization state of the window """
-        if event.button() != Qt.LeftButton or not self._isDoubleClickEnabled:
+        if event.button() != Qt.MouseButton.LeftButton or not self._isDoubleClickEnabled:
             return
 
         self.__toggleMaxState()
@@ -50,24 +50,17 @@ class TitleBarBase(QWidget):
         if sys.platform != "win32" or not self.canDrag(e.pos()):
             return
 
-        startSystemMove(self.window(), e.globalPos())
+        startSystemMove(self.window(), e.globalPosition().toPoint())
 
     def mousePressEvent(self, e):
         if sys.platform == "win32" or not self.canDrag(e.pos()):
             return
 
-        startSystemMove(self.window(), e.globalPos())
+        startSystemMove(self.window(), e.globalPosition().toPoint())
 
     def __toggleMaxState(self):
         """ Toggles the maximization state of the window and change icon """
-        if self.window().isMaximized():
-            self.window().showNormal()
-        else:
-            self.window().showMaximized()
-            
-        if sys.platform == "win32":
-            from ..utils.win32_utils import releaseMouseLeftButton
-            releaseMouseLeftButton(self.window().winId())
+        toggleMaxState(self.window())
 
     def _isDragRegion(self, pos):
         """ Check whether the position belongs to the area where dragging is allowed """
@@ -88,6 +81,7 @@ class TitleBarBase(QWidget):
 
     def setDoubleClickEnabled(self, isEnabled):
         """ whether to switch window maximization status when double clicked
+
         Parameters
         ----------
         isEnabled: bool
@@ -106,12 +100,12 @@ class TitleBar(TitleBarBase):
         # add buttons to layout
         self.hBoxLayout.setSpacing(0)
         self.hBoxLayout.setContentsMargins(0, 0, 0, 0)
-        self.hBoxLayout.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.hBoxLayout.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         self.hBoxLayout.addStretch(1)
-        self.hBoxLayout.addWidget(self.minBtn, 0, Qt.AlignRight)
-        self.hBoxLayout.addWidget(self.maxBtn, 0, Qt.AlignRight)
-        self.hBoxLayout.addWidget(self.closeBtn, 0, Qt.AlignRight)
-
+        self.hBoxLayout.addWidget(self.minBtn, 0, Qt.AlignmentFlag.AlignRight)
+        self.hBoxLayout.addWidget(self.maxBtn, 0, Qt.AlignmentFlag.AlignRight)
+        self.hBoxLayout.addWidget(self.closeBtn, 0, Qt.AlignmentFlag.AlignRight)
+        
 
 class StandardTitleBar(TitleBar):
     """ Title bar with icon and title """
@@ -122,12 +116,12 @@ class StandardTitleBar(TitleBar):
         self.iconLabel = QLabel(self)
         self.iconLabel.setFixedSize(20, 20)
         self.hBoxLayout.insertSpacing(0, 10)
-        self.hBoxLayout.insertWidget(1, self.iconLabel, 0, Qt.AlignLeft)
+        self.hBoxLayout.insertWidget(1, self.iconLabel, 0, Qt.AlignmentFlag.AlignLeft)
         self.window().windowIconChanged.connect(self.setIcon)
 
         # add title label
         self.titleLabel = QLabel(self)
-        self.hBoxLayout.insertWidget(2, self.titleLabel, 0, Qt.AlignLeft)
+        self.hBoxLayout.insertWidget(2, self.titleLabel, 0, Qt.AlignmentFlag.AlignLeft)
         self.titleLabel.setStyleSheet("""
             QLabel{
                 background: transparent;

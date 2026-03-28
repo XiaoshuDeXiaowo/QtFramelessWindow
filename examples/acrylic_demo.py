@@ -1,9 +1,9 @@
 # coding:utf-8
 import sys
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication
-from qframelesswindow import AcrylicWindow
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QApplication
+from QtFramelessWindow import AcrylicWindow
 
 
 class Window(AcrylicWindow):
@@ -24,8 +24,10 @@ if __name__ == '__main__':
     # enable dpi scale
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    from qtpy import QT5
+    if QT5:
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     app = QApplication(sys.argv)
     demo = Window()

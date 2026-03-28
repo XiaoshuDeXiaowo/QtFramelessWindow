@@ -1,11 +1,11 @@
 # coding:utf-8
 import sys
 
-from PySide2.QtCore import QRect, QSize, Qt
-from PySide2.QtGui import QColor, QPixmap, QIcon
-from PySide2.QtWidgets import QApplication, QLabel
+from qtpy.QtCore import QRect, QSize, Qt
+from qtpy.QtGui import QColor, QPixmap, QIcon
+from qtpy.QtWidgets import QApplication, QLabel
 
-from qframelesswindow import FramelessWindow, TitleBar, StandardTitleBar
+from QtFramelessWindow import FramelessWindow, TitleBar, StandardTitleBar
 
 
 class CustomTitleBar(StandardTitleBar):
@@ -80,8 +80,10 @@ if __name__ == "__main__":
     # enable dpi scale
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    from qtpy import QT5
+    if QT5:
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     # run app
     app = QApplication(sys.argv)

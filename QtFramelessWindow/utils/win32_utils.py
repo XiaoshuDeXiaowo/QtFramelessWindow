@@ -1,7 +1,7 @@
 # coding:utf-8
 import sys
 import warnings
-from ctypes import Structure, byref, sizeof, windll, c_ulong, c_bool, POINTER, WinDLL, wintypes
+from ctypes import Structure, byref, sizeof, windll, c_int, c_ulong, c_bool, POINTER, WinDLL, wintypes
 from ctypes.wintypes import DWORD, HWND, LPARAM, RECT, UINT
 from platform import platform
 from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx, CloseKey
@@ -10,11 +10,11 @@ import win32api
 import win32con
 import win32gui
 import win32print
-from PySide2.QtCore import QOperatingSystemVersion, QObject, QEvent, QVersionNumber
-from PySide2.QtGui import QGuiApplication, QColor
-from PySide2.QtWidgets import QWidget
-from PySide2.QtWinExtras import QtWin
+from qtpy.QtCore import QOperatingSystemVersion, QObject, QEvent, qVersion
+from qtpy.QtGui import QGuiApplication, QColor
+from qtpy.QtWidgets import QWidget
 from win32comext.shell import shellcon
+QT_VERSION = tuple(int(v) for v in qVersion().split('.'))
 
 
 def getSystemAccentColor():
@@ -132,7 +132,7 @@ def getResizeBorderThickness(hWnd, horizontal=True):
     if result > 0:
         return result
 
-    thickness = 8 if QtWin.isCompositionEnabled() else 4
+    thickness = 8 if IsCompositionEnabled() else 4
     return round(thickness*window.devicePixelRatio())
 
 
@@ -197,22 +197,37 @@ def findWindow(hWnd):
             return window
 
 
+def IsCompositionEnabled():
+    """ detect if dwm composition is enabled """
+    bResult = c_int(0)
+    windll.dwmapi.DwmIsCompositionEnabled(byref(bResult))
+    return bool(bResult.value)
+
+
+def isGreaterEqualVersion(version):
+    """ determine if the windows version ≥ the specifics version
+
+    Parameters
+    ----------
+    version: QOperatingSystemVersion
+        windows version
+    """
+    return QOperatingSystemVersion.current() >= version
+
+
 def isGreaterEqualWin8_1():
     """ determine if the windows version ≥ Win8.1 """
-    cv = QOperatingSystemVersion.current()
-    cv = QVersionNumber(cv.majorVersion(), cv.minorVersion(), cv.microVersion())
-    return cv >= QVersionNumber(8, 1, 0)
+    return isGreaterEqualVersion(QOperatingSystemVersion.Windows8_1)
 
 
 def isGreaterEqualWin10():
     """ determine if the windows version ≥ Win10 """
-    cv = QOperatingSystemVersion.current()
-    return cv.type() == QOperatingSystemVersion.OSType.Windows and cv.majorVersion() >= 10
+    return isGreaterEqualVersion(QOperatingSystemVersion.Windows10)
 
 
 def isGreaterEqualWin11():
-    """ determine if the windows version ≥ Win11 """
-    return isGreaterEqualWin10() and sys.getwindowsversion().build >= 22000
+    """ determine if the windows version ≥ Win10 """
+    return isGreaterEqualVersion(QOperatingSystemVersion.Windows10) and sys.getwindowsversion().build >= 22000
 
 
 def isWin7():
@@ -316,7 +331,7 @@ class Taskbar:
 
 
 class WindowsMoveResize:
-    """ Tool class for moving and resizing Windows window """
+    """ Tool class for moving and resizing Mac OS window """
 
     @staticmethod
     def startSystemMove(window, globalPos):
@@ -354,6 +369,21 @@ class WindowsMoveResize:
             window edges
         """
         pass
+
+    @classmethod
+    def toggleMaxState(cls, window):
+        if QT_VERSION < (6, 8, 0):
+            if window.isMaximized():
+                window.showNormal()
+            else:
+                window.showMaximized()
+        else:
+            if window.isMaximized():
+                win32gui.PostMessage(int(window.winId()), win32con.WM_SYSCOMMAND, win32con.SC_RESTORE, 0)
+            else:
+                win32gui.PostMessage(int(window.winId()), win32con.WM_SYSCOMMAND, win32con.SC_MAXIMIZE, 0)
+
+        releaseMouseLeftButton(window.winId())
 
 
 class WindowsScreenCaptureFilter(QObject):

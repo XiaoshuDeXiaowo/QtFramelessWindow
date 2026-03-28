@@ -1,11 +1,11 @@
 # coding:utf-8
 from enum import Enum
 
-from PySide2.QtCore import QFile, QPointF, QRectF, Qt, Property
-from PySide2.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide2.QtWidgets import QAbstractButton
-from PySide2.QtSvg import QSvgRenderer
-from PySide2.QtXml import QDomDocument
+from qtpy.QtCore import QFile, QPointF, QRectF, Qt, Property
+from qtpy.QtGui import QColor, QPainter, QPainterPath, QPen
+from qtpy.QtWidgets import QAbstractButton
+from qtpy.QtSvg import QSvgRenderer
+from qtpy.QtXml import QDomDocument
 
 from .._rc import resource
 
@@ -22,7 +22,7 @@ class TitleBarButton(QAbstractButton):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.setCursor(Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
         self.setFixedSize(46, 32)
         self._state = TitleBarButtonState.NORMAL
 
@@ -150,7 +150,7 @@ class TitleBarButton(QAbstractButton):
         super().leaveEvent(e)
 
     def mousePressEvent(self, e):
-        if e.button() != Qt.LeftButton:
+        if e.button() != Qt.MouseButton.LeftButton:
             return
 
         self.setState(TitleBarButtonState.PRESSED)
@@ -202,18 +202,19 @@ class SvgTitleBarButton(TitleBarButton):
             the path of icon
         """
         f = QFile(iconPath)
-        f.open(QFile.ReadOnly)
+        f.open(QFile.OpenModeFlag.ReadOnly)
         self._svgDom.setContent(f.readAll())
         f.close()
 
     def paintEvent(self, e):
         painter = QPainter(self)
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(
+            QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         color, bgColor = self._getColors()
 
         # draw background
         painter.setBrush(bgColor)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRect(self.rect())
 
         # draw icon
@@ -236,11 +237,11 @@ class MinimizeButton(TitleBarButton):
 
         # draw background
         painter.setBrush(bgColor)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRect(self.rect())
 
         # draw icon
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         pen = QPen(color, 1)
         pen.setCosmetic(True)
         painter.setPen(pen)
@@ -268,11 +269,11 @@ class MaximizeButton(TitleBarButton):
 
         # draw background
         painter.setBrush(bgColor)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRect(self.rect())
 
         # draw icon
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         pen = QPen(color, 1)
         pen.setCosmetic(True)
         painter.setPen(pen)
@@ -298,8 +299,9 @@ class CloseButton(SvgTitleBarButton):
     """ Close button """
 
     def __init__(self, parent=None):
-        super().__init__(":/qframelesswindow/close.svg", parent)
-        self.setHoverColor(Qt.white)
-        self.setPressedColor(Qt.white)
+        super().__init__(":/QtFramelessWindow/close.svg", parent)
+        self.setHoverColor(Qt.GlobalColor.white)
+        self.setPressedColor(Qt.GlobalColor.white)
         self.setHoverBackgroundColor(QColor(232, 17, 35))
         self.setPressedBackgroundColor(QColor(241, 112, 122))
+

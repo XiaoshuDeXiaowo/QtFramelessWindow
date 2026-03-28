@@ -1,8 +1,8 @@
 # coding:utf-8
 import Cocoa
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QWidget
-from PySide2.QtGui import QColor
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QWidget
+from qtpy.QtGui import QColor
 from ..utils.mac_utils import getNSWindow
 
 
@@ -10,7 +10,7 @@ class QMacCocoaViewContainer(QWidget):
 
     def __init__(self, view, parent=None):
         super().__init__(parent=parent)
-        self.setAttribute(Qt.WA_NativeWindow)
+        self.setAttribute(Qt.WidgetAttribute.WA_NativeWindow)
 
 
 class MacWindowEffect:
@@ -189,6 +189,7 @@ class MacWindowEffect:
     def enableBlurBehindWindow(self, hWnd):
         """ enable the blur effect behind the whole client
 
+
         Parameters
         ----------
         hWnd: int or `sip.voidptr`
@@ -212,3 +213,5 @@ class MacWindowEffect:
         hWnd: int or `sip.voidptr`
             Window handle
         """
+        pass
+

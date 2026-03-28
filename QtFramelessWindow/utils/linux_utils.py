@@ -1,7 +1,7 @@
 # coding: utf-8
-from PySide2.QtCore import QEvent, QPoint, Qt, QObject
-from PySide2.QtGui import QMouseEvent, QColor
-from PySide2.QtWidgets import QApplication, QWidget
+from qtpy.QtCore import QObject, QEvent
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QWidget
 
 
 class LinuxMoveResize:
@@ -9,20 +9,8 @@ class LinuxMoveResize:
 
     @classmethod
     def startSystemMove(cls, window, globalPos):
-        """ move window
-
-        Parameters
-        ----------
-        window: QWidget
-            window
-
-        globalPos: QPoint
-            the global point of mouse release event
-        """
+        """ move window """
         window.windowHandle().startSystemMove()
-        event = QMouseEvent(QEvent.MouseButtonRelease, QPoint(-1, -1),
-                            Qt.LeftButton, Qt.NoButton, Qt.NoModifier)
-        QApplication.instance().postEvent(window.windowHandle(), event)
 
     @classmethod
     def starSystemResize(cls, window, globalPos, edges):
@@ -39,10 +27,14 @@ class LinuxMoveResize:
         edges: `Qt.Edges`
             window edges
         """
-        if not edges:
-            return
-
         window.windowHandle().startSystemResize(edges)
+
+    @classmethod
+    def toggleMaxState(cls, window):
+        if window.isMaximized():
+            window.showNormal()
+        else:
+            window.showMaximized()
 
 
 def getSystemAccentColor():

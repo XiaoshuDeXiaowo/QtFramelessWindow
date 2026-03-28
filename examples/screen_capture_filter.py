@@ -1,11 +1,11 @@
 # coding:utf-8
 import sys
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QApplication
 
-from qframelesswindow import FramelessWindow
-from qframelesswindow.utils import ScreenCaptureFilter
+from QtFramelessWindow import FramelessWindow
+from QtFramelessWindow.utils import ScreenCaptureFilter
 
 
 class Window(FramelessWindow):
@@ -22,8 +22,10 @@ if __name__ == "__main__":
     # enable dpi scale
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    from qtpy import QT5
+    if QT5:
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     # run app
     app = QApplication(sys.argv)

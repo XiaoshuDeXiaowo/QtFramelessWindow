@@ -3,13 +3,13 @@ from ctypes import c_void_p
 
 import Cocoa
 import objc
-from PySide2.QtCore import qVersion, QEvent, QObject
-from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QWidget
+from qtpy.QtCore import QT_VERSION_STR, QEvent, QObject
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QWidget
 from Quartz.CoreGraphics import (CGEventCreateMouseEvent,
                                  kCGEventLeftMouseDown, kCGMouseButtonLeft)
 
-QT_VERSION = tuple(int(v) for v in qVersion().split('.'))
+QT_VERSION = tuple(int(v) for v in QT_VERSION_STR.split('.'))
 
 
 class MacMoveResize:
@@ -59,6 +59,13 @@ class MacMoveResize:
             window edges
         """
         pass
+
+    @classmethod
+    def toggleMaxState(cls, window):
+        if window.isMaximized():
+            window.showNormal()
+        else:
+            window.showMaximized()
 
 
 def getNSWindow(winId):

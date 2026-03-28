@@ -7,14 +7,13 @@ from ctypes.wintypes import DWORD, LONG, LPCVOID
 import win32api
 import win32con
 import win32gui
-from PySide2.QtWinExtras import QtWin
-from PySide2.QtGui import QColor
+from qtpy.QtGui import QColor
 
 from .c_structures import (ACCENT_POLICY, ACCENT_STATE, DWMNCRENDERINGPOLICY,
                            DWMWINDOWATTRIBUTE, MARGINS,
                            WINDOWCOMPOSITIONATTRIB,
                            WINDOWCOMPOSITIONATTRIBDATA, DWM_BLURBEHIND)
-from ..utils.win32_utils import isGreaterEqualWin10, isGreaterEqualWin11
+from ..utils.win32_utils import isGreaterEqualWin10, isGreaterEqualWin11, IsCompositionEnabled
 
 
 class WindowsWindowEffect:
@@ -75,7 +74,8 @@ class WindowsWindowEffect:
         gradientColor = ''.join(gradientColor[i:i+2] for i in range(6, -1, -2))
         gradientColor = DWORD(int(gradientColor, base=16))
         animationId = DWORD(animationId)
-        accentFlags = DWORD(0x20 | 0x40 | 0x80 | 0x100) if enableShadow else DWORD(0)
+        accentFlags = DWORD(0x20 | 0x40 | 0x80 |
+                            0x100) if enableShadow else DWORD(0)
         self.accentPolicy.AccentState = ACCENT_STATE.ACCENT_ENABLE_ACRYLICBLURBEHIND.value
         self.accentPolicy.GradientColor = gradientColor
         self.accentPolicy.AccentFlags = accentFlags
@@ -150,7 +150,8 @@ class WindowsWindowEffect:
 
         if isDarkMode:
             self.winCompAttrData.Attribute = WINDOWCOMPOSITIONATTRIB.WCA_USEDARKMODECOLORS.value
-            self.SetWindowCompositionAttribute(hWnd, pointer(self.winCompAttrData))
+            self.SetWindowCompositionAttribute(
+                hWnd, pointer(self.winCompAttrData))
 
         if sys.getwindowsversion().build < 22523:
             self.DwmSetWindowAttribute(hWnd, 1029, byref(c_int(1)), 4)
@@ -207,7 +208,7 @@ class WindowsWindowEffect:
         hWnd: int or `sip.voidptr`
             Window handle
         """
-        if not QtWin.isCompositionEnabled():
+        if not IsCompositionEnabled():
             return
 
         hWnd = int(hWnd)
@@ -222,7 +223,7 @@ class WindowsWindowEffect:
         hWnd: int or `sip.voidptr`
             Window handle
         """
-        if not QtWin.isCompositionEnabled():
+        if not IsCompositionEnabled():
             return
 
         hWnd = int(hWnd)
@@ -266,6 +267,28 @@ class WindowsWindowEffect:
         win32api.SetClassLong(hWnd, win32con.GCL_STYLE, style)
 
     @staticmethod
+    def addWindowAnimation(hWnd):
+        """ Enables the maximize and minimize animation of the window
+
+        Parameters
+        ----------
+        hWnd: int or `sip.voidptr`
+            Window handle
+        """
+        hWnd = int(hWnd)
+        style = win32gui.GetWindowLong(hWnd, win32con.GWL_STYLE)
+        win32gui.SetWindowLong(
+            hWnd,
+            win32con.GWL_STYLE,
+            style
+            | win32con.WS_MINIMIZEBOX
+            | win32con.WS_MAXIMIZEBOX
+            | win32con.WS_CAPTION
+            | win32con.CS_DBLCLKS
+            | win32con.WS_THICKFRAME,
+        )
+
+    @staticmethod
     def disableMaximizeButton(hWnd):
         """ Disable the maximize button of window
 
@@ -280,28 +303,6 @@ class WindowsWindowEffect:
             hWnd,
             win32con.GWL_STYLE,
             style & ~win32con.WS_MAXIMIZEBOX,
-        )
-
-    @staticmethod
-    def addWindowAnimation(hWnd):
-        """ Enables the maximize and minimize animation of the window
-
-        Parameters
-        ----------
-        hWnd : int or `sip.voidptr`
-            Window handle
-        """
-        hWnd = int(hWnd)
-        style = win32gui.GetWindowLong(hWnd, win32con.GWL_STYLE)
-        win32gui.SetWindowLong(
-            hWnd,
-            win32con.GWL_STYLE,
-            style
-            | win32con.WS_MINIMIZEBOX
-            | win32con.WS_MAXIMIZEBOX
-            | win32con.WS_CAPTION
-            | win32con.CS_DBLCLKS
-            | win32con.WS_THICKFRAME,
         )
 
     def enableBlurBehindWindow(self, hWnd):

@@ -1,9 +1,10 @@
 # coding: utf-8
 import sys
 
-from PySide2.QtCore import Qt
-from PySide2.QtWebEngineWidgets import QWebEngineView
-from qframelesswindow import AcrylicWindow, FramelessWindowBase
+from qtpy.QtCore import Qt
+from qtpy.QtWebEngineWidgets import QWebEngineView
+from QtFramelessWindow import AcrylicWindow, FramelessWindow
+from QtFramelessWindow import AcrylicWindow
 
 
 class FramelessWebEngineView(QWebEngineView):
@@ -18,5 +19,5 @@ class FramelessWebEngineView(QWebEngineView):
         if sys.platform in ("win32", "darwin"):
             self.setHtml("")
 
-        if isinstance(self.window(), FramelessWindowBase):
+        if isinstance(self.window(), FramelessWindow):
             self.window().updateFrameless()

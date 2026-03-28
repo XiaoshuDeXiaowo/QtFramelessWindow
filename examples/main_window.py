@@ -1,10 +1,10 @@
 # coding:utf-8
 import sys
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QLabel, QMenuBar, QMenu, QStatusBar, QTextEdit, QHBoxLayout
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QApplication, QLabel, QMenuBar, QMenu, QStatusBar, QTextEdit, QHBoxLayout
 
-from qframelesswindow import FramelessMainWindow, FramelessDialog
+from QtFramelessWindow import FramelessMainWindow, FramelessDialog
 
 
 class MainWindow(FramelessMainWindow):
@@ -62,12 +62,14 @@ if __name__ == '__main__':
     # enable dpi scale
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    from qtpy import QT5
+    if QT5:
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     app = QApplication(sys.argv)
 
-    # fix issue #50
+    # fix issue zhiyiYo/PyQt-Frameless-Window#50
     app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
 
     window = MainWindow()

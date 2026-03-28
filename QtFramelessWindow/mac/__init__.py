@@ -1,10 +1,11 @@
 # coding:utf-8
 import Cocoa
 import objc
-from PySide2.QtCore import QEvent, Qt, QRect, QSize, QPoint, QTimer
-from PySide2.QtWidgets import QWidget
+from qtpy.QtCore import QEvent, Qt, QRect, QSize, QPoint
+from qtpy.QtWidgets import QWidget
 
 from ..titlebar import TitleBar
+from ..utils.mac_utils import QT_VERSION
 from .window_effect import MacWindowEffect
 
 
@@ -13,16 +14,19 @@ class MacFramelessWindow(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self._isSystemButtonVisible = False
-
-    def _initFrameless(self):
         self.windowEffect = MacWindowEffect(self)
         # must enable acrylic effect before creating title bar
         if isinstance(self, AcrylicWindow):
             self.windowEffect.setAcrylicEffect(self.winId())
 
         self.titleBar = TitleBar(self)
+        self._isSystemButtonVisible = False
         self._isResizeEnabled = True
+
+        # remove content margin
+        if QT_VERSION >= (6, 8, 0):
+            self.setAttribute(Qt.WidgetAttribute.WA_ContentsMarginsRespectsSafeArea, False)
+            self.titleBar.setAttribute(Qt.WidgetAttribute.WA_LayoutOnEntireRect, True)
 
         self.updateFrameless()
 
@@ -40,17 +44,23 @@ class MacFramelessWindow(QWidget):
 
     def setStayOnTop(self, isTop: bool):
         """ set the stay on top status """
+        # Save the current window geometry before changing flags to prevent window jumping on macOS with PySide 6.9+
+        oldGeometry = self.geometry()
+
         if isTop:
-            self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+            self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
         else:
-            self.setWindowFlags(self.windowFlags() & ~Qt.WindowStaysOnTopHint)
+            self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
 
         self.updateFrameless()
         self.show()
 
+        # Restore the window geometry to prevent position shift
+        self.setGeometry(oldGeometry)
+
     def toggleStayOnTop(self):
         """ toggle the stay on top status """
-        if self.windowFlags() & Qt.WindowStaysOnTopHint:
+        if self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint:
             self.setStayOnTop(False)
         else:
             self.setStayOnTop(True)
@@ -69,6 +79,9 @@ class MacFramelessWindow(QWidget):
         self.titleBar.setParent(self)
         self.titleBar.raise_()
 
+        if QT_VERSION >= (6, 8, 0):
+            self.titleBar.setAttribute(Qt.WidgetAttribute.WA_LayoutOnEntireRect)
+
     def setResizeEnabled(self, isEnabled: bool):
         """ set whether resizing is enabled """
         self._isResizeEnabled = isEnabled
@@ -79,22 +92,21 @@ class MacFramelessWindow(QWidget):
 
     def paintEvent(self, e):
         super().paintEvent(e)
-        self._hideSystemTitleBar(self.isSystemButtonVisible())
+        self._updateSystemTitleBar()
 
     def changeEvent(self, event):
-        if event.type() == QEvent.WindowStateChange:
-            self._hideSystemTitleBar(self.isSystemButtonVisible())
-
-            # Delay must be added, otherwise the buttons will be misplaced
-            QTimer.singleShot(1, self._updateSystemButtonRect)
-        elif event.type() == QEvent.Resize:
+        if event.type() == QEvent.Type.WindowStateChange:
+            self._updateSystemTitleBar()
+        elif event.type() == QEvent.Type.Resize:
             self._updateSystemButtonRect()
 
-    def _hideSystemTitleBar(self, showButton=False):
+    def _updateSystemTitleBar(self):
+        self._extendTitleBarToClientArea()
+        self.setSystemTitleBarButtonVisible(self.isSystemButtonVisible())
+
+    def _hideSystemTitleBar(self):
         # extend view to title bar region
-        self.__nsWindow.setStyleMask_(
-            self.__nsWindow.styleMask() | Cocoa.NSFullSizeContentViewWindowMask)
-        self.__nsWindow.setTitlebarAppearsTransparent_(True)
+        self._extendTitleBarToClientArea()
 
         # disable the moving behavior of system
         self.__nsWindow.setMovableByWindowBackground_(False)
@@ -102,7 +114,12 @@ class MacFramelessWindow(QWidget):
 
         # hide title bar buttons and title
         self.__nsWindow.setTitleVisibility_(Cocoa.NSWindowTitleHidden)
-        self.setSystemTitleBarButtonVisible(showButton)
+        self.setSystemTitleBarButtonVisible(False)
+
+    def _extendTitleBarToClientArea(self):
+        self.__nsWindow.setStyleMask_(
+            self.__nsWindow.styleMask() | Cocoa.NSFullSizeContentViewWindowMask)
+        self.__nsWindow.setTitlebarAppearsTransparent_(True)
 
     def isSystemButtonVisible(self):
         return self._isSystemButtonVisible
@@ -176,8 +193,8 @@ class MacFramelessWindow(QWidget):
 class AcrylicWindow(MacFramelessWindow):
     """ A frameless window with acrylic effect """
 
-    def _initFrameless(self):
-        super()._initFrameless()
-        self.setAttribute(Qt.WA_TranslucentBackground)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.windowEffect.setAcrylicEffect(self.winId())
         self.setStyleSheet("background: transparent")

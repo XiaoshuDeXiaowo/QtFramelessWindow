@@ -1,5 +1,5 @@
 # coding:utf-8
-from PySide2.QtGui import QColor
+from qtpy.QtGui import QColor
 
 
 class LinuxWindowEffect:
@@ -161,6 +161,7 @@ class LinuxWindowEffect:
     def enableBlurBehindWindow(self, hWnd):
         """ enable the blur effect behind the whole client
 
+
         Parameters
         ----------
         hWnd: int or `sip.voidptr`
@@ -184,3 +185,4 @@ class LinuxWindowEffect:
         hWnd: int or `sip.voidptr`
             Window handle
         """
+        pass
